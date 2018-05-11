@@ -1,3 +1,7 @@
+var fs = require('fs')
+var logger = fs.createWriteStream('tabela.txt', {
+    flags: 'a'
+})
 function readFile(fileName) {
     var fs = require("fs");
     var text = fs.readFileSync(fileName).toString();
@@ -8,6 +12,7 @@ function readClauses(textByLine) {
     var getLine = "";
     var numberOfLines = textByLine[0];
     for(var i = 1; i <= numberOfLines; i++){
+        getLine = "";
         getLine = textByLine[i].split(" ");
         var array1 = [];
         for(var k = 0; k < getLine.length; k++){
@@ -23,8 +28,19 @@ function readClauses(textByLine) {
         }
     }
 }
-
-function readClausess(array1) {
+function sortByLength(array) {
+    for(var i = 0; i < array.length-1; i++){
+        for(var k = 0; k < array.length-i-1; k++){
+            if(array[k].length > array[k+1].length){
+                var aux = array[k];
+                array[k] = array[k+1];
+                array[k+1] = aux;
+            }
+        }
+    }
+    return array;
+}
+function readClausess(array1,op) {
     var str = "";
     var stk1 = [];
     var stk2 = [];
@@ -33,16 +49,37 @@ function readClausess(array1) {
     for(var i = 0; i < array1.length; i++){
         str += array1[i];
     }
-    for (var i = 0; i < str.length; i++){
-        if (str.charAt(i) == '('){
-            stk1.push(str.charAt(i))
-            stk2.push(i);
-        }else if(str.charAt(i) == ')'){
-            var a = stk2.pop();
-            clauses[aux] = str.substring(a+1,i);
-            aux++;
+    if(str.length != 4){
+        for (var i = 0; i < str.length; i++){
+            if (str.charAt(i) == '('){
+                stk1.push(str.charAt(i))
+                stk2.push(i);
+            }else if(str.charAt(i) == ')'){
+                var a = stk2.pop();
+                var aux3 = false;
+                for(var k = 0; k < clauses.length; k++){
+                    var aux2 = str.substring(a+1,i);
+                    if(aux2 == clauses[k]){
+                        aux3 = true;
+                    }
+                }
+                if(!aux3) {
+                    clauses[aux] = str.substring(a + 1, i);
+                    aux++;
+                }
+            }
         }
+    }else {
+        // tratando caso de 1 variavel 0 clausulas
+        var v = str.charAt(2);
+        v = v + "";
+        logger.write("Problema #" + op + "\n");
+        logger.write(v + " |" + "\n");
+        logger.write("0 |\n");
+        logger.write("1 |\n");
+        logger.write("Sim, é satisfatível.\n");
     }
+    clauses = sortByLength(clauses);
     return clauses;
 }
 function  readVariables(clauses) {
@@ -72,16 +109,33 @@ function  readVariables(clauses) {
     return variables;
 }
 function doTable(array1,i) {
-    var clauses = readClausess(array1);
+    var clauses = readClausess(array1,i);
     var variables = readVariables(clauses);
     var clausesValue = [];
-    var fs = require('fs')
-    var logger = fs.createWriteStream('tabela.txt', {
-        flags: 'a'
-    })
-    logger.write("Problema #" + i + "\n");
+    var isSat = false;
+    var posP = -1,posQ = -1,posR = -1,posS = -1;
+    for(var k = 0; k < variables.length; k++){
+        if(variables[k] == "P"){
+            posP = k;
+        }else if(variables[k] == "Q"){
+            posQ = k;
+        }else if(variables[k] == "R"){
+            posR = k;
+        }else if(variables[k] == "S"){
+            posS = k;
+        }
+    }
+    // PRINT PROBLEMA
+    if(clauses != "") {
+        logger.write("Problema #" + i + "\n");
+    }
+    //
+    //
+    //INICIO TRATAMENTO VARIAVEIS/PRINT CLAUSULAS
+    //
+    //
     var binary = "";
-    for (var k = 0; k < clauses.length-1; k++){
+    for (var k = 0; k < variables.length; k++){
         binary += 0;
     }
     // printando o nome das variaveis
@@ -90,7 +144,17 @@ function doTable(array1,i) {
             var a = variables[k] + " ";
             logger.write(a);
         }else{
-            var a = variables[k] + " |" + "\n";
+            var a = variables[k] + " | ";
+            logger.write(a);
+        }
+    }
+    // printando as clausulas
+    for (var k = 0; k < clauses.length; k++){
+        if(k != clauses.length-1){
+            var a = clauses[k] + "  ";
+            logger.write(a);
+        }else{
+            var a = clauses[k] + "\n";
             logger.write(a);
         }
     }
@@ -108,12 +172,12 @@ function doTable(array1,i) {
             }
         }
         // colocando os valores das variaveis no array
-        for (var k = binary.length; k >= 0; k--){
+        for (var k = binary.length-1; k >= 0; k--){
             variablesValue.push(binary.charAt(k));
         }
         // printando as variaveis e seus valores
-        for (var k = variables.length; k > 0; k--){
-            if (k != 1) {
+        for (var k = variablesValue.length-1; k >= 0; k--){
+            if (k != 0) {
                 var a = variablesValue[k] + " ";
                 logger.write(a);
             }else{
@@ -121,8 +185,50 @@ function doTable(array1,i) {
                 logger.write(a);
             }
         }
+        //
+        //
+        //FIM TRATAMENTO VARIAVEIS
+        //
+        //INICIO TRATAMENTO CLAUSULAS
+        for(var k = 0; k < clauses.length; k++){
+            for(var q = 0; q < clauses[k].length; q++){
+                if(clauses[k].charAt(0) != "(" && clauses[k].charAt(0) == "~") {
+                    var aux99 = clauses[k].charAt(1);
+                    if(aux99 == 'P'){
+                        if(variablesValue[posP] == 0){
+                            clausesSolved.push(1);
+                        }else{
+                            clausesSolved.push(0);
+                        }
+                    }else if(aux99 == 'Q'){
+                        if(variablesValue[posQ] == 0){
+                            clausesSolved.push(1);
+                        }else{
+                            clausesSolved.push(0);
+                        }
+                    }else if(aux99 == 'R'){
+                        if(variablesValue[posR] == 0){
+                            clausesSolved.push(1);
+                        }else{
+                            clausesSolved.push(0);
+                        }
+                    }else if(aux99 == 'S'){
+                        if(variablesValue[posS] == 0){
+                            clausesSolved.push(1);
+                        }else{
+                            clausesSolved.push(0);
+                        }
+                    }
+                }
+            }
+            console.log(clausesSolved[0]);
+        }
     }
-// colocando espaço entre os problemas
+    if (isSat){
+        logger.write("Sim, é satisfatível.\n");
+    }else if(!isSat && clauses != ""){
+        logger.write("Não, não é satisfatível.\n");
+    }
 }
 function doUnit(array1) {
 
