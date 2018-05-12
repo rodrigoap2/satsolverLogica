@@ -3,7 +3,6 @@ var logger = fs.createWriteStream('tabela.txt', {
     flags: 'a'
 })
 function readFile(fileName) {
-    var fs = require("fs");
     var text = fs.readFileSync(fileName).toString();
     var textByLine = text.split("\n");
     var clauses = readClauses(textByLine);
@@ -77,7 +76,7 @@ function readClausess(array1,op) {
         logger.write(v + " |" + "\n");
         logger.write("0 |\n");
         logger.write("1 |\n");
-        logger.write("Sim, é satisfatível.\n");
+        logger.write("Sim, é satisfatível.\n" + "\n");
     }
     clauses = sortByLength(clauses);
     return clauses;
@@ -108,10 +107,298 @@ function  readVariables(clauses) {
     variables.sort();
     return variables;
 }
+function tratamentoClausulas(variablesValue,clausesSolved,clause,posP,posQ,posR,posS,clauses) {
+    var qtdAbertos = 0;
+    var qtdFechados = 0;
+    var retorno = "";
+    for(var i = 0; i < clause.length; i++){
+        // tratamento NEGAÇÃO
+        if(clause.charAt(i) == '~' && qtdAbertos == qtdFechados){
+            var a = [];
+            a[1] = clause.substring(i+1,clause.length);
+            // tratar clausulas unitarias
+            if(a[1].length == 1){
+                if(a[1] == "P"){
+                    if(variablesValue[posP] == 0){
+                        retorno = 1;
+                    }else{
+                        retorno = 0;
+                    }
+                }else if(a[1] == "Q"){
+                    if(variablesValue[posQ] == 0){
+                        retorno = 1;
+                    }else{
+                        retorno = 0;
+                    }
+                }else if(a[1] == 'R'){
+                    if(variablesValue[posR] == 0){
+                        retorno = 1;
+                    }else{
+                        retorno = 0;
+                    }
+                }else if(a[1] == 'S') {
+                    if (variablesValue[posS] == 0) {
+                        retorno = 1;
+                    } else {
+                        retorno = 0;
+                    }
+                }
+                break;
+                // tratamento clausulas não unitárias
+            }else {
+                for(var k = 0; k < clauses.length; k++){
+                    var aa = clauses[k] + ")";
+                    aa = "(" + aa;
+                    if(clauses[k] == a[1] || aa == a[1]){
+                        if(clausesSolved[k] == 0){
+                            retorno = 1;
+                            break;
+                        }else{
+                            retorno = 0;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        else if(clause.charAt(i) == '('){
+            qtdAbertos++;
+        }else if(clause.charAt(i) == ')'){
+            qtdFechados++;
+        }
+        // tratamento OU
+        else if(clause.charAt(i) == 'v' && qtdAbertos == qtdFechados){
+            var a = [];
+            a[0] = clause.substring(0,i);
+            a[1] = clause.substring(i+1,clause.length);
+            var valor1;
+            var valor2;
+            if(a[0].length == 1){
+                if (a[0] == 'P'){
+                    valor1 = variablesValue[posP];
+                }else if(a[0] == 'Q'){
+                    valor1 = variablesValue[posQ];
+                }else if(a[0] == 'R'){
+                    valor1 = variablesValue[posR];
+                }else if(a[0] == 'S'){
+                    valor1 = variablesValue[posS];
+                }
+            }else if(a[0].length != 1){
+                for(var k = 0; k < clausesSolved.length; k++){
+                    var aa = clauses[k] + ")";
+                    aa = "(" + aa;
+                    if(clauses[k] == a[0] || aa == a[0]){
+                        valor1 = clausesSolved[k];
+                        break;
+                    }
+                }
+            }if (a[1].length == 1){
+                if (a[1] == 'P'){
+                    valor2 = variablesValue[posP];
+                }else if(a[1] == 'Q'){
+                    valor2 = variablesValue[posQ];
+                }else if(a[1] == 'R'){
+                    valor2 = variablesValue[posR];
+                }else if(a[1] == 'S'){
+                    valor2 = variablesValue[posS];
+                }
+            }else if(a[1].length != 1){
+                for(var k = 0; k < clausesSolved.length; k++){
+                    var aa = clauses[k] + ")";
+                    aa = "(" + aa;
+                    if(clauses[k] == a[1] || aa == a[1]){
+                        valor2 = clausesSolved[k];
+                        break;
+                    }
+            }
+        }
+            if(valor1 == 0 && valor2 == 0){
+                retorno = 0;
+            }else if(valor1 == 0 && valor2 == 1){
+                retorno = 1;
+            }else if(valor1 == 1 && valor2 == 0){
+                retorno = 1;
+            }else if(valor1 == 1 && valor2 == 1){
+                retorno = 1;
+            }
+            break;
+        }
+        else if(clause.charAt(i) == '&' && qtdAbertos == qtdFechados){
+            var a = [];
+            a[0] = clause.substring(0,i);
+            a[1] = clause.substring(i+1,clause.length);
+            var valor1;
+            var valor2;
+            if(a[0].length == 1){
+                if (a[0] == 'P'){
+                    valor1 = variablesValue[posP];
+                }else if(a[0] == 'Q'){
+                    valor1 = variablesValue[posQ];
+                }else if(a[0] == 'R'){
+                    valor1 = variablesValue[posR];
+                }else if(a[0] == 'S'){
+                    valor1 = variablesValue[posS];
+                }
+            }else if(a[0].length != 1){
+                for(var k = 0; k < clausesSolved.length; k++){
+                    var aa = clauses[k] + ")";
+                    aa = "(" + aa;
+                    if(clauses[k] == a[0] || aa == a[0]){
+                        valor1 = clausesSolved[k];
+                        break;
+                    }
+                }
+            }if (a[1].length == 1){
+                if (a[1] == 'P'){
+                    valor2 = variablesValue[posP];
+                }else if(a[1] == 'Q'){
+                    valor2 = variablesValue[posQ];
+                }else if(a[1] == 'R'){
+                    valor2 = variablesValue[posR];
+                }else if(a[1] == 'S'){
+                    valor2 = variablesValue[posS];
+                }
+            }else if(a[1].length != 1){
+                for(var k = 0; k < clausesSolved.length; k++){
+                    var aa = clauses[k] + ")";
+                    aa = "(" + aa;
+                    if(clauses[k] == a[1] || aa == a[1]){
+                        valor2 = clausesSolved[k];
+                        break;
+                    }
+                }
+            }
+            if(valor1 == 0 && valor2 == 0){
+                retorno = 0;
+            }else if(valor1 == 0 && valor2 == 1){
+                retorno = 0;
+            }else if(valor1 == 1 && valor2 == 0){
+                retorno = 0;
+            }else if(valor1 == 1 && valor2 == 1){
+                retorno = 1;
+            }
+            break;
+        }
+        else if(clause.charAt(i) == '<' && qtdAbertos == qtdFechados){
+            var a = [];
+            a[0] = clause.substring(0,i);
+            a[1] = clause.substring(i+1,clause.length);
+            var valor1;
+            var valor2;
+            if(a[0].length == 1){
+                if (a[0] == 'P'){
+                    valor1 = variablesValue[posP];
+                }else if(a[0] == 'Q'){
+                    valor1 = variablesValue[posQ];
+                }else if(a[0] == 'R'){
+                    valor1 = variablesValue[posR];
+                }else if(a[0] == 'S'){
+                    valor1 = variablesValue[posS];
+                }
+            }else if(a[0].length != 1){
+                for(var k = 0; k < clausesSolved.length; k++){
+                    var aa = clauses[k] + ")";
+                    aa = "(" + aa;
+                    if(clauses[k] == a[0] || aa == a[0]){
+                        valor1 = clausesSolved[k];
+                        break;
+                    }
+                }
+            }if (a[1].length == 1){
+                if (a[1] == 'P'){
+                    valor2 = variablesValue[posP];
+                }else if(a[1] == 'Q'){
+                    valor2 = variablesValue[posQ];
+                }else if(a[1] == 'R'){
+                    valor2 = variablesValue[posR];
+                }else if(a[1] == 'S'){
+                    valor2 = variablesValue[posS];
+                }
+            }else if(a[1].length != 1){
+                for(var k = 0; k < clausesSolved.length; k++){
+                    var aa = clauses[k] + ")";
+                    aa = "(" + aa;
+                    if(clauses[k] == a[1] || aa == a[1]){
+                        valor2 = clausesSolved[k];
+                        break;
+                    }
+                }
+            }
+            if(valor1 == 0 && valor2 == 0){
+                retorno = 1;
+            }else if(valor1 == 0 && valor2 == 1){
+                retorno = 0;
+            }else if(valor1 == 1 && valor2 == 0){
+                retorno = 0;
+            }else if(valor1 == 1 && valor2 == 1){
+                retorno = 1;
+            }
+            break;
+        }
+        else if(clause.charAt(i) == '>' && qtdAbertos == qtdFechados){
+            var a = [];
+            a[0] = clause.substring(0,i);
+            a[1] = clause.substring(i+1,clause.length);
+            var valor1;
+            var valor2;
+            if(a[0].length == 1){
+                if (a[0] == 'P'){
+                    valor1 = variablesValue[posP];
+                }else if(a[0] == 'Q'){
+                    valor1 = variablesValue[posQ];
+                }else if(a[0] == 'R'){
+                    valor1 = variablesValue[posR];
+                }else if(a[0] == 'S'){
+                    valor1 = variablesValue[posS];
+                }
+            }else if(a[0].length != 1){
+                for(var k = 0; k < clausesSolved.length; k++){
+                    var aa = clauses[k] + ")";
+                    aa = "(" + aa;
+                    if(clauses[k] == a[0] || aa == a[0]){
+                        valor1 = clausesSolved[k];
+                        break;
+                    }
+                }
+            }if (a[1].length == 1){
+                if (a[1] == 'P'){
+                    valor2 = variablesValue[posP];
+                }else if(a[1] == 'Q'){
+                    valor2 = variablesValue[posQ];
+                }else if(a[1] == 'R'){
+                    valor2 = variablesValue[posR];
+                }else if(a[1] == 'S'){
+                    valor2 = variablesValue[posS];
+                }
+            }else if(a[1].length != 1){
+                for(var k = 0; k < clausesSolved.length; k++){
+                    var aa = clauses[k] + ")";
+                    aa = "(" + aa;
+                    if(clauses[k] == a[1] || aa == a[1]){
+                        valor2 = clausesSolved[k];
+                        break;
+                    }
+                }
+            }
+            if(valor1 == 0 && valor2 == 0){
+                retorno = 1;
+            }else if(valor1 == 0 && valor2 == 1){
+                retorno = 1;
+            }else if(valor1 == 1 && valor2 == 0){
+                retorno = 0;
+            }else if(valor1 == 1 && valor2 == 1){
+                retorno = 1;
+            }
+            break;
+        }
+    }
+    return retorno;
+}
 function doTable(array1,i) {
     var clauses = readClausess(array1,i);
     var variables = readVariables(clauses);
     var clausesValue = [];
+    var str = "";
     var isSat = false;
     var posP = -1,posQ = -1,posR = -1,posS = -1;
     for(var k = 0; k < variables.length; k++){
@@ -162,6 +449,7 @@ function doTable(array1,i) {
     for(var i = 0; i < Math.pow(2,variables.length); i++){
         var clausesSolved = [];
         var variablesValue = [];
+        clausesValue = [];
         // pegando os valores de pqrs
         if(i != 0){
             var a = parseInt(binary,2);
@@ -179,10 +467,10 @@ function doTable(array1,i) {
         for (var k = variablesValue.length-1; k >= 0; k--){
             if (k != 0) {
                 var a = variablesValue[k] + " ";
-                logger.write(a);
+                str += a;
             }else{
-                var a = variablesValue[k] + " |" + "\n";
-                logger.write(a);
+                var a = variablesValue[k] + " |";
+                str += a;
             }
         }
         //
@@ -190,44 +478,33 @@ function doTable(array1,i) {
         //FIM TRATAMENTO VARIAVEIS
         //
         //INICIO TRATAMENTO CLAUSULAS
+        // inicio tratamento hardcore
+        var bbbb = variablesValue.reverse();
         for(var k = 0; k < clauses.length; k++){
-            for(var q = 0; q < clauses[k].length; q++){
-                if(clauses[k].charAt(0) != "(" && clauses[k].charAt(0) == "~") {
-                    var aux99 = clauses[k].charAt(1);
-                    if(aux99 == 'P'){
-                        if(variablesValue[posP] == 0){
-                            clausesSolved.push(1);
-                        }else{
-                            clausesSolved.push(0);
-                        }
-                    }else if(aux99 == 'Q'){
-                        if(variablesValue[posQ] == 0){
-                            clausesSolved.push(1);
-                        }else{
-                            clausesSolved.push(0);
-                        }
-                    }else if(aux99 == 'R'){
-                        if(variablesValue[posR] == 0){
-                            clausesSolved.push(1);
-                        }else{
-                            clausesSolved.push(0);
-                        }
-                    }else if(aux99 == 'S'){
-                        if(variablesValue[posS] == 0){
-                            clausesSolved.push(1);
-                        }else{
-                            clausesSolved.push(0);
-                        }
-                    }
-                }
+            var abc = tratamentoClausulas(bbbb,clausesSolved,clauses[k],posP,posQ,posR,posS,clauses);
+            clausesValue.push(abc);
+            clausesSolved.push(abc);
+        }
+        for(var k = 0; k < clausesSolved.length; k++){
+            var uu = clausesSolved[k];
+            for(var ii = 0; ii < clauses[k].length; ii++){
+                uu = " " + uu;
             }
-            console.log(clausesSolved[0]);
+            if(k != clausesSolved.length-1){
+                str += uu + " ";
+            }else{
+                str += uu + "\n";
+            }
+        }
+        if(clausesSolved[clausesSolved.length-1] == 1){
+            isSat = true;
         }
     }
+    logger.write(str);
     if (isSat){
-        logger.write("Sim, é satisfatível.\n");
+        logger.write("Sim, é satisfatível.\n" + "\n");
     }else if(!isSat && clauses != ""){
-        logger.write("Não, não é satisfatível.\n");
+        logger.write("Não, não é satisfatível.\n" + "\n");
     }
 }
 function doUnit(array1) {
